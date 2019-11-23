@@ -1,138 +1,219 @@
-const https = require('https');
 const axios = require('axios');
-const qs = require('querystring')
+const fs = require('fs');
+const qs = require('querystring');
+const toml = require('toml');
+const winston = require('winston');
 
-const hostname = 'localhost';
-const port = '9443';
-const tokenPort = '8243';
-const version = 'v0.14';
+const conf = toml.parse(fs.readFileSync('./repository/conf/deployment.toml', 'utf-8'));
+const log = conf.debug;
 
-const adminUsername = 'admin';
-const adminPassword = 'admin';
-
+// ignore ssl verifications
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
+// #region winston logger configurations
+
+/*
+ *
+ * specified winston logger format will contain the following pattern
+ * LEVEL :: MESSAGE
+ *
+ * NOTE: haven't appended the time since this is executed at the client side
+ *
+ * two log files will be created at the time of execution
+ * 1. api-republish-error.log : only contains the error logs of the server
+ * 2. api-republish.log : contains both error and other levels of logs
+ *
+ */
+
+const loggerFormat = winston.format.printf((info) => {
+	return `${info.level} :: ${info.message}`;
+});
+
+const logger = winston.createLogger({
+	format: winston.format.combine(loggerFormat),
+	transports: [
+		new winston.transports.File({ filename: conf.log.source + 'api-republish-error.log', level: 'error' }),
+		new winston.transports.File({ filename: conf.log.source + 'api-republish.log' }),
+		new winston.transports.Console({ format: winston.format.simple() }),
+	],
+	exitOnError: false,
+});
+
+// #endregion
+
+logger.info(`Starting API Re-Publish`);
+
 async function registerClient() {
-    try {
+	try {
 		//#region client-registation
-        var clientRegData = {
-            callbackUrl: 'www.google.lk',
-            clientName: 'rest_api_store',
-            owner: 'admin',
-            grantType: 'password refresh_token',
-            saasApp: true
-        };
-        
-        let clientRegResp = await axios.post(
-			`https://${hostname}:${port}/client-registration/${version}/register`,
-			clientRegData,
+
+		/*
+		 *
+		 * following region block determines the dynamic client registration
+		 * with the APIM Server to perform API Republication
+		 *
+		 * a request object will be developed based on the configurations and
+		 * values given in the deployment.toml
+		 *
+		 */
+
+		if (log.debug) logger.debug(`Registering a Dynamic Client with the Server`);
+
+		let dcrReq = {
+			callbackUrl: conf.dynamic_client_registration.callbackUrl,
+			clientName: conf.dynamic_client_registration.clientName,
+			owner: conf.dynamic_client_registration.owner,
+			grantType: conf.dynamic_client_registration.grantType,
+			saasApp: conf.dynamic_client_registration.saasApp,
+		};
+
+		let dcrResp = await axios.post(
+			`https://${conf.hostname}:${conf.port}/client-registration/${conf.version}/register`,
+			dcrReq,
 			{
 				headers: {
 					'Content-Type': 'application/json',
-					Authorization:
-						'Basic ' +
-						new Buffer(
-							adminUsername +
-								':' +
-								adminPassword
-						).toString('base64')
-				}
+					Authorization: 'Basic ' + new Buffer(conf.username + ':' + conf.password).toString('base64'),
+				},
 			}
 		);
 
-        // console.log('\n\n\n Client Registration \n\n');
-        // console.log(clientRegResp.data);
-        //#endregion
-        //#region access-token
-        var accessTokenData = {
-            grant_type: 'password',
-            username: adminUsername,
-            password: adminPassword,
-            scope: 'apim:subscribe apim:api_create apim:api_view apim:api_publish'
-        };
-        
-        var accessTokenResp = await axios.post(
-			`https://${hostname}:${tokenPort}/token`,
-			qs.stringify(accessTokenData),
+		if (log.response)
+			logger.debug(`Response :: Dynamic Client Registration --------------------------------
+${dcrResp.data}`);
+
+		//#endregion
+
+		//#region access-token
+
+		/*
+		 *
+		 * following region block determines the generation of access token
+		 * to perform API Republication
+		 *
+		 * a request object will be developed based on the configurations and
+		 * values given in the deployment.toml
+		 *
+		 */
+
+		if (log.debug)
+			logger.debug(
+				`Generating Access Token using consumerKey : ${dcrResp.data.clientId} & consumerSecret : ${dcrResp.data.clientSecret}`
+			);
+
+		let accessTokenReq = {
+			grant_type: conf.access_token.grant_type,
+			username: conf.username,
+			password: conf.password,
+			scope: conf.access_token.scope,
+		};
+
+		let accessTokenResp = await axios.post(
+			`https://${conf.hostname}:${conf.tokenPort}/token`,
+			qs.stringify(accessTokenReq),
 			{
 				headers: {
 					'Content-Type': 'application/x-www-form-urlencoded',
 					Authorization:
 						'Basic ' +
-						new Buffer(
-							clientRegResp.data.clientId +
-								':' +
-								clientRegResp.data.clientSecret
-						).toString('base64')
-				}
+						new Buffer(dcrResp.data.clientId + ':' + dcrResp.data.clientSecret).toString('base64'),
+				},
 			}
 		);
 
-        // console.log('\n\n\n Access Token \n\n');
-        // console.log(accessTokenResp.data);
-        //#endregion
-        //#region list apis
-        var apiResp = await axios.get(
-			`https://${hostname}:${port}/api/am/publisher/${version}/apis?expand=true`,
+		if (log.response)
+			logger.debug(`Response :: Access Token Generation ------------------------------------
+${accessTokenResp.data}`);
+
+		//#endregion
+
+		//#region list apis
+
+		/*
+		 *
+		 * following region block is implemented to list all the available apis
+		 * from the APIM Server
+		 *
+		 * a request object will be developed based on the configurations and
+		 * values given in the deployment.toml
+		 *
+		 */
+
+		if (log.debug)
+			logger.debug(
+				`Listing all available APIs with the generated Access Token : ${accessTokenResp.data.access_token}`
+			);
+
+		let apiResp = await axios.get(
+			`https://${conf.hostname}:${conf.port}/api/am/publisher/${conf.version}/apis?expand=true`,
 			{
 				headers: {
 					'Content-Type': 'application/json',
-					Authorization: 'Bearer ' + accessTokenResp.data.access_token
-				}
+					Authorization: 'Bearer ' + accessTokenResp.data.access_token,
+				},
 			}
 		);
-        
-        // console.log('\n\n\n List APIs \n\n');
-        // console.log(apiResp.data);
-        //#endregion
-        let apis = [];
-        apiResp.data.list.forEach(element => {
-            if (element.status === 'PUBLISHED' && element.visibility === 'RESTRICTED') {
-                apis.push(element.id);
-                // console.log(element.id);
-            }
-        });
 
-        apis.forEach(element => {
-            console.log(`publishing ${element}`);
-            axios
+		if (log.response)
+			logger.debug(`Response :: API List ---------------------------------------------------
+${apiResp.data}`);
+
+		//#endregion
+
+		if (log.debug) logger.debug(`Filtering APIs based on the Status : 'PUBLISHED' & Visibility : 'RESTRICTED'`);
+
+		let apis = [];
+		apiResp.data.list.forEach((element) => {
+			if (element.status === 'PUBLISHED' && element.visibility === 'RESTRICTED') {
+				if (log.debug) logger.debug(`ID = ${element.id} :: API Name = ${element.name}`);
+				apis.push(element.id);
+			}
+		});
+
+		apis.forEach((element) => {
+			logger.info(`Re-Publishing API ID = ${element}`);
+			axios
 				.post(
-					`https://${hostname}:${port}/api/am/publisher/${version}/apis/change-lifecycle?apiId=${element}&action=Publish`,
+					`https://${conf.hostname}:${conf.port}/api/am/publisher/${conf.version}/apis/change-lifecycle?apiId=${element}&action=Publish`,
 					null,
 					{
 						headers: {
 							'Content-Type': 'application/json',
-							Authorization:
-								'Bearer ' + accessTokenResp.data.access_token
-						}
+							Authorization: 'Bearer ' + accessTokenResp.data.access_token,
+						},
 					}
 				)
-				.catch((error) => {
-					console.error('Error occured while changing life-cycle for :: ' + element);
+				.catch((_error) => {
+                    logger.error(`Something went wrong while changing life-cycle for API ID = ${element}
+>> `, _error);
 				});
-        });
-    } catch (error) {
+		});
+	} catch (error) {
 		if (error.response) {
-			/*
+			/**
 			 * The request was made and the server responded with a
 			 * status code that falls out of the range of 2xx
 			 */
-			console.log(error.response.data + ' :: ' + error.response.status);
-			// console.log(error.response.status);
-			// console.log(error.response.headers);
-		} else if (error.request) {
-			/*
+
+            logger.error(`Response recieved from the Server
+>> `, error);
+        }
+        if (error.request) {
+			/**
 			 * The request was made but no response was received, `error.request`
 			 * is an instance of XMLHttpRequest in the browser and an instance
 			 * of http.ClientRequest in Node.js
 			 */
-			console.log(error.request);
-		} else {
+            logger.error(`Something went wrong after sending the request to the Server
+>> `, error);
+            // throw new Error(error.request);
+        }
+        if (!error.response && !error.request) {
 			// Something happened in setting up the request and triggered an Error
-			console.log('Error :: ', error.message);
+            logger.error(`Something went wrong
+>> `, error);
 		}
-		// console.log(error);
-    }
+	}
 }
 
 registerClient();

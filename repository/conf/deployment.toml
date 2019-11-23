@@ -1,0 +1,31 @@
+# server configurations
+hostname = 'localhost'
+port = '9443'
+tokenPort = '8243'
+version = 'v0.14'
+
+# admin credentials
+username = 'admin'
+password = 'admin'
+
+# dynamic client registration
+[dynamic_client_registration]
+callbackUrl = 'www.google.lk'
+clientName = 'rest_api_store'
+owner = 'admin'
+grantType = 'password refresh_token'
+saasApp = true
+
+# access token generation configurations
+[access_token]
+grant_type = 'password'
+scope = 'apim:subscribe apim:api_create apim:api_view apim:api_publish'
+
+# winston logger configurations
+[log]
+source = './repository/logs/'
+
+# winston logger debug configurations
+[debug]
+debug = false
+response = false
