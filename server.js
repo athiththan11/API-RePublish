@@ -1,5 +1,6 @@
 const axios = require('axios');
 const fs = require('fs');
+const moment = require('moment-timezone');
 const qs = require('querystring');
 const toml = require('toml');
 const winston = require('winston');
@@ -25,23 +26,28 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
  *
  */
 
+const appendTimestamp = winston.format((info, opts) => {
+	info.timestamp = moment().format();
+	return info;
+});
+
 const loggerFormat = winston.format.printf((info) => {
-	return `${info.level} :: ${info.message}`;
+	return `${info.timestamp} ${info.level.toUpperCase()} :: ${info.message}`;
 });
 
 const logger = winston.createLogger({
-	format: winston.format.combine(loggerFormat),
+	format: winston.format.combine(appendTimestamp({}), loggerFormat),
 	transports: [
 		new winston.transports.File({ filename: conf.log.source + 'api-republish-error.log', level: 'error' }),
 		new winston.transports.File({ filename: conf.log.source + 'api-republish.log' }),
-		new winston.transports.Console({ format: winston.format.simple() }),
+		new winston.transports.Console(),
 	],
 	exitOnError: false,
 });
 
 // #endregion
 
-logger.info(`Starting API Re-Publish`);
+logger.info(`------------------ Starting API Re-Publish ------------------`);
 
 async function registerClient() {
 	try {
@@ -184,8 +190,11 @@ ${apiResp.data}`);
 					}
 				)
 				.catch((_error) => {
-                    logger.error(`Something went wrong while changing life-cycle for API ID = ${element}
->> `, _error);
+					logger.error(
+						`Something went wrong while changing life-cycle for API ID = ${element}
+>> `,
+						_error
+					);
 				});
 		});
 	} catch (error) {
@@ -195,23 +204,32 @@ ${apiResp.data}`);
 			 * status code that falls out of the range of 2xx
 			 */
 
-            logger.error(`Response recieved from the Server
->> `, error);
-        }
-        if (error.request) {
+			logger.error(
+				`Response recieved from the Server
+>> `,
+				error
+			);
+		}
+		if (error.request) {
 			/**
 			 * The request was made but no response was received, `error.request`
 			 * is an instance of XMLHttpRequest in the browser and an instance
 			 * of http.ClientRequest in Node.js
 			 */
-            logger.error(`Something went wrong after sending the request to the Server
->> `, error);
-            // throw new Error(error.request);
-        }
-        if (!error.response && !error.request) {
+			logger.error(
+				`Something went wrong after sending the request to the Server
+>> `,
+				error
+			);
+			// throw new Error(error.request);
+		}
+		if (!error.response && !error.request) {
 			// Something happened in setting up the request and triggered an Error
-            logger.error(`Something went wrong
->> `, error);
+			logger.error(
+				`Something went wrong
+>> `,
+				error
+			);
 		}
 	}
 }

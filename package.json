@@ -7,8 +7,8 @@
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},
 	"author": "athiththan11",
-    "license": "ISC",
-    "bin": {
+	"license": "ISC",
+	"bin": {
 		"api-republish": "./bin/api-republish"
 	},
 	"dependencies": {
