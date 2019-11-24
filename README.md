@@ -3,9 +3,10 @@
 A simple NodeJS script to re-publish APIs using WSO2 API Manager REST APIs.
 
 > Inrtoduced to overcome Solr indexing problems in WSO2 API Manager to re-publish APIs (re-index).
-> Supports APIM `> v2.5`
+>
+> Supports WSO2 API Manager `>= v2.5`
 
-## Folder Structure
+## Structure
 
 ```text
 |- bin
@@ -27,7 +28,7 @@ A simple NodeJS script to re-publish APIs using WSO2 API Manager REST APIs.
    npm install
    ```
 
-3. Navigate to `/repository/conf` and edit `deployment.toml` to change teh `hostname`, `port` and etc. values
+3. Navigate to `/repository/conf` and edit `deployment.toml` to change the `hostname`, `port` and etc. values
 4. To enable debug logs and responses recieved from the server, navigate to `/repoistory/conf/deployment.toml` and set `true` for both `debug` and `response` under the `[debug]` section
 5. Execute the following command from the root folder to execute the script
 
