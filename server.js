@@ -1,11 +1,13 @@
 const axios = require('axios');
+const beautify = require('json-beautify');
 const fs = require('fs');
 const moment = require('moment-timezone');
+const path = require('path');
 const qs = require('querystring');
 const toml = require('toml');
 const winston = require('winston');
 
-const conf = toml.parse(fs.readFileSync('./repository/conf/deployment.toml', 'utf-8'));
+const conf = toml.parse(fs.readFileSync(path.join(__dirname,'/repository/conf/deployment.toml'), 'utf-8'));
 const log = conf.debug;
 
 // ignore ssl verifications
@@ -38,9 +40,9 @@ const loggerFormat = winston.format.printf((info) => {
 const logger = winston.createLogger({
 	format: winston.format.combine(appendTimestamp({}), loggerFormat),
 	transports: [
-		new winston.transports.File({ filename: conf.log.source + 'api-republish-error.log', level: 'error' }),
-		new winston.transports.File({ filename: conf.log.source + 'api-republish.log' }),
-		new winston.transports.Console(),
+		new winston.transports.File({ filename: path.join(__dirname, conf.log.source + 'api-republish-error.log'), level: 'error' }),
+		new winston.transports.File({ filename: path.join(__dirname, conf.log.source + 'api-republish.log'), level:'debug' }),
+		new winston.transports.Console({ level: 'debug' }),
 	],
 	exitOnError: false,
 });
@@ -79,14 +81,16 @@ async function registerClient() {
 			{
 				headers: {
 					'Content-Type': 'application/json',
-					Authorization: 'Basic ' + new Buffer(conf.username + ':' + conf.password).toString('base64'),
+					Authorization: 'Basic ' + new Buffer.from(conf.username + ':' + conf.password).toString('base64'),
 				},
 			}
 		);
 
 		if (log.response)
-			logger.debug(`Response :: Dynamic Client Registration --------------------------------
-${dcrResp.data}`);
+			logger.debug(
+				`Response :: Dynamic Client Registration --------------------------------
+${beautify(dcrResp.data, null, 4)}`
+			);
 
 		//#endregion
 
@@ -122,14 +126,14 @@ ${dcrResp.data}`);
 					'Content-Type': 'application/x-www-form-urlencoded',
 					Authorization:
 						'Basic ' +
-						new Buffer(dcrResp.data.clientId + ':' + dcrResp.data.clientSecret).toString('base64'),
+						new Buffer.from(dcrResp.data.clientId + ':' + dcrResp.data.clientSecret).toString('base64'),
 				},
 			}
 		);
 
 		if (log.response)
 			logger.debug(`Response :: Access Token Generation ------------------------------------
-${accessTokenResp.data}`);
+${beautify(accessTokenResp.data, null, 4)}`);
 
 		//#endregion
 
@@ -162,7 +166,7 @@ ${accessTokenResp.data}`);
 
 		if (log.response)
 			logger.debug(`Response :: API List ---------------------------------------------------
-${apiResp.data}`);
+${beautify(apiResp.data, null, 4)}`);
 
 		//#endregion
 
