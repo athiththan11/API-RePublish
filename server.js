@@ -7,7 +7,7 @@ const qs = require('querystring');
 const toml = require('toml');
 const winston = require('winston');
 
-const conf = toml.parse(fs.readFileSync(path.join(__dirname,'/repository/conf/deployment.toml'), 'utf-8'));
+const conf = toml.parse(fs.readFileSync(path.join(__dirname, '/repository/conf/deployment.toml'), 'utf-8'));
 const log = conf.debug;
 
 // ignore ssl verifications
@@ -40,8 +40,14 @@ const loggerFormat = winston.format.printf((info) => {
 const logger = winston.createLogger({
 	format: winston.format.combine(appendTimestamp({}), loggerFormat),
 	transports: [
-		new winston.transports.File({ filename: path.join(__dirname, conf.log.source + 'api-republish-error.log'), level: 'error' }),
-		new winston.transports.File({ filename: path.join(__dirname, conf.log.source + 'api-republish.log'), level:'debug' }),
+		new winston.transports.File({
+			filename: path.join(__dirname, conf.log.source + 'api-republish-error.log'),
+			level: 'error',
+		}),
+		new winston.transports.File({
+			filename: path.join(__dirname, conf.log.source + 'api-republish.log'),
+			level: 'debug',
+		}),
 		new winston.transports.Console({ level: 'debug' }),
 	],
 	exitOnError: false,
@@ -76,7 +82,7 @@ async function registerClient() {
 		};
 
 		let dcrResp = await axios.post(
-			`https://${conf.hostname}:${conf.port}/client-registration/${conf.version}/register`,
+			`https://${conf.kmHostname}:${conf.kmPort}/client-registration/${conf.version}/register`,
 			dcrReq,
 			{
 				headers: {
@@ -155,7 +161,7 @@ ${beautify(accessTokenResp.data, null, 4)}`);
 			);
 
 		let apiResp = await axios.get(
-			`https://${conf.hostname}:${conf.port}/api/am/publisher/${conf.version}/apis?expand=true`,
+			`https://${conf.hostname}:${conf.port}/api/am/publisher/${conf.version}/apis?expand=true&limit=${conf.limit}`,
 			{
 				headers: {
 					'Content-Type': 'application/json',
@@ -179,6 +185,10 @@ ${beautify(apiResp.data, null, 4)}`);
 				apis.push(element.id);
 			}
 		});
+
+		if (apis.length == 0) {
+			logger.info('No APIs available to republish');
+		}
 
 		apis.forEach((element) => {
 			logger.info(`Re-Publishing API ID = ${element}`);

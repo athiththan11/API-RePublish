@@ -4,6 +4,13 @@ port = '9443'
 tokenPort = '8243'
 version = 'v0.14'
 
+# key manager configurations
+kmHostname = 'localhost'
+kmPort = '9443'
+
+# api retrieve rest api limit
+limit = 1
+
 # admin credentials
 username = 'admin'
 password = 'admin'
