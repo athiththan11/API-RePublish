@@ -76,7 +76,7 @@ async function registerClient() {
 		};
 
 		let dcrResp = await axios.post(
-			`https://${conf.hostname}:${conf.port}/client-registration/${conf.version}/register`,
+			`https://${conf.km_hostname}:${conf.km_port}/client-registration/${conf.version}/register`,
 			dcrReq,
 			{
 				headers: {
@@ -155,7 +155,7 @@ ${beautify(accessTokenResp.data, null, 4)}`);
 			);
 
 		let apiResp = await axios.get(
-			`https://${conf.hostname}:${conf.port}/api/am/publisher/${conf.version}/apis?expand=true`,
+			`https://${conf.hostname}:${conf.port}/api/am/publisher/${conf.version}/apis?expand=${conf.expand}&limit=${conf.limit}&query=${conf.query}`,
 			{
 				headers: {
 					'Content-Type': 'application/json',

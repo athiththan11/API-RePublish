@@ -1,8 +1,14 @@
 # server configurations
 hostname = 'localhost'
 port = '9443'
+km_hostname = 'localhost'
+km_port = '9443'
 tokenPort = '8243'
 version = 'v0.14'
+
+expand = true
+limit = 200
+query = 'status:PUBLISHED'
 
 # admin credentials
 username = 'admin'
