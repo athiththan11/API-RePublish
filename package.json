@@ -1,7 +1,7 @@
 {
 	"name": "api-republish",
 	"version": "1.0.0",
-	"description": "NodeJS Script to Republish APIs on WSO2 Server",
+	"description": "NodeJS Script to Republish APIs on WSO2 API Manager 3.0",
 	"main": "server.js",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1"

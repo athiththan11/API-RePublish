@@ -4,7 +4,7 @@ port = '9443'
 km_hostname = 'localhost'
 km_port = '9443'
 version = 'v0.14'
-
+restapi = 'publisher' # use publisher or store rest api
 expand = true
 limit = 200
 offset = 0

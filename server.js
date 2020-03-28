@@ -157,11 +157,11 @@ ${beautify(accessTokenResp.data, null, 4)}`);
 
 		if (log.debug)
 			logger.debug(
-				`Listing all available APIs using Publisher REST API with the generated Access Token : ${accessTokenResp.data.access_token}`
+				`Listing all available APIs using ${conf.restapi} REST API with the generated Access Token : ${accessTokenResp.data.access_token}`
 			);
 
 		let apiResp = await axios.get(
-			`https://${conf.hostname}:${conf.port}/api/am/publisher/${conf.version}/apis?expand=${conf.expand}&limit=${conf.limit}&offset=${conf.offset}&query=${conf.query}`,
+			`https://${conf.hostname}:${conf.port}/api/am/${conf.restapi}/${conf.version}/apis?expand=${conf.expand}&limit=${conf.limit}&offset=${conf.offset}&query=${conf.query}`,
 			{
 				headers: {
 					'Content-Type': 'application/json',
@@ -176,14 +176,15 @@ ${beautify(apiResp.data, null, 4)}`);
 
 		//#endregion
 
-		if (log.debug) logger.debug(`Filtering APIs based on the Status : 'PUBLISHED' & Visibility : 'RESTRICTED'`);
+		if (log.debug) logger.debug(`Filtering APIs`);
 
 		let apis = [];
 		apiResp.data.list.forEach((element) => {
-			if (element.status === 'PUBLISHED' && element.visibility === 'RESTRICTED') {
-				if (log.debug) logger.debug(`API ID = ${element.id} :: API Name = ${element.name}`);
-				apis.push(element);
-			}
+			logger.info(
+				`Retrieved API : ${element.id} :: Provider = ${element.provider} :: Name =  ${element.name} :: Version = ${element.version}`
+			);
+			if (log.debug) logger.debug(`Filtered API ID = ${element.id} :: Name = ${element.name}`);
+			apis.push(element);
 		});
 
 		if (apis.length == 0) {
@@ -192,7 +193,7 @@ ${beautify(apiResp.data, null, 4)}`);
 
 		// after 5 seconds timeout perform update
 		setTimeout(() => {
-			publishAPI(apis, conf, accessTokenResp, 0);
+			blockAndRePublishAPI(apis, conf, accessTokenResp, 0);
 		}, conf.misc.timeout);
 	} catch (error) {
 		if (error.response) {
@@ -232,21 +233,21 @@ ${beautify(apiResp.data, null, 4)}`);
 }
 
 /**
- * method to change life-cycle to Publish APIs
+ * method to change life-cycle to Block APIs
  *
  * @param {[]} apis an array of APIS
  * @param {{}} conf deployment toml configurations
  * @param {{}} accessTokenResp token endpoint response
  * @param {number} count count
  */
-async function publishAPI(apis, conf, accessTokenResp, count) {
+async function blockAndRePublishAPI(apis, conf, accessTokenResp, count) {
 	if (count < apis.length) {
 		let element = apis[count];
-		logger.info(`Publishing API ID = ${element.id}, API Name = ${element.name}`);
+		logger.info(`Blocking API ID = ${element.id} :: API Name = ${element.name}`);
 
 		axios
 			.post(
-				`https://${conf.hostname}:${conf.port}/api/am/publisher/${conf.version}/apis/change-lifecycle?apiId=${element.id}&action=Publish`,
+				`https://${conf.hostname}:${conf.port}/api/am/publisher/${conf.version}/apis/change-lifecycle?apiId=${element.id}&action=Block`,
 				null,
 				{
 					headers: {
@@ -256,11 +257,48 @@ async function publishAPI(apis, conf, accessTokenResp, count) {
 				}
 			)
 			.then(() => {
-				publishAPI(apis, conf, accessTokenResp, ++count);
+				republishAPI(apis, conf, accessTokenResp, count);
 			})
+			.then(() => {
+				blockAndRePublishAPI(apis, conf, accessTokenResp, ++count);
+			})
+			.catch((_error) => {
+				logger.error(
+					`Something went wrong while changing life-cycle for API ID = ${element.id} :: Name = ${element.name} for Block
+>> `,
+					_error
+				);
+			});
+	}
+}
+
+/**
+ * method to change life-cycle to Re-Publish APIs
+ *
+ * @param {[]} apis an array of APIS
+ * @param {{}} conf deployment toml configurations
+ * @param {{}} accessTokenResp token endpoint response
+ * @param {number} count count
+ */
+async function republishAPI(apis, conf, accessTokenResp, count) {
+	if (count < apis.length) {
+		let element = apis[count];
+		logger.info(`Re-Publishing API ID = ${element.id} :: API Name = ${element.name}`);
+
+		axios
+			.post(
+				`https://${conf.hostname}:${conf.port}/api/am/publisher/${conf.version}/apis/change-lifecycle?apiId=${element.id}&action=Re-Publish`,
+				null,
+				{
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: 'Bearer ' + accessTokenResp.data.access_token
+					}
+				}
+			)
 			.catch((error) => {
 				logger.error(
-					`Something went wrong while changing life-cycle for API ID = ${element.id} :: Name = ${element.name}
+					`Something went wrong while changing life-cycle for API ID = ${element.id} :: Name = ${element.name} for Re-Publish
 >> `,
 					error
 				);

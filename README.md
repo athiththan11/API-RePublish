@@ -2,8 +2,10 @@
 
 A simple NodeJS script to re-publish APIs using WSO2 API Manager REST APIs.
 
-> Inrtoduced to overcome Solr indexing problems in WSO2 API Manager to re-publish APIs (re-index).
-> Supports WSO2 API Manager `>= v2.5.0`
+> Inrtoduced to overcome Solr indexing problems & Visibility issues in WSO2 API Manager to block and re-publish APIs.
+> Supports WSO2 API Manager `3.0.0`
+
+[master-branch](https://github.com/athiththan11/API-RePublish/tree/master) contains the implementation for API Manager servers 2.x family. Please read the execution flow and the README to understand the execution plan.
 
 ## Structure
 
@@ -48,6 +50,7 @@ A simple NodeJS script to re-publish APIs using WSO2 API Manager REST APIs.
 | km_hostname  | Hostname of the Key Manager node  | `localhost`  |
 | km_port  | Port of the Key Manager node  | 9443  |
 | version  | WSO2 API Manager REST API version  | `v0.14`  |
+| restapi  | REST API [publisher | store]  | `publisher`  |
 | expand  | Expand query parameter  | true  |
 | limit  | Limit query parameter  | 200  |
 | offset  | Offset query parameter  | 0  |
@@ -83,8 +86,10 @@ A simple NodeJS script to re-publish APIs using WSO2 API Manager REST APIs.
 
 1. Registers a dynamic client
 2. Generates the Access Token using Admin credentials
-3. Lists all the available APIs using the Publisher API (with expanded info)
-4. Filters the APIs under the following conditions
-   1. Status = Published
-   2. Visibility = Restricted
-5. Publishes the filtered APIs
+3. Lists all the available APIs using the Publisher/Store API (based on the deployment.toml configuration and with/without expanded info)
+4. Change Life-cycle to Block state
+5. Change life-cycle to Re-Publish to Publish the APIs again
+
+## License
+
+[Apache 2.0](LICENSE)
