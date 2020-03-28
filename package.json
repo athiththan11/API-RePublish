@@ -2,12 +2,12 @@
 	"name": "api-republish",
 	"version": "1.0.0",
 	"description": "NodeJS Script to Republish APIs on WSO2 Server",
-	"main": "index.js",
+	"main": "server.js",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},
 	"author": "athiththan11",
-	"license": "ISC",
+	"license": "Apache-2.0",
 	"bin": {
 		"api-republish": "./bin/api-republish"
 	},
