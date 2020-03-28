@@ -7,7 +7,7 @@ const qs = require('querystring');
 const toml = require('toml');
 const winston = require('winston');
 
-const conf = toml.parse(fs.readFileSync(path.join(__dirname, '/repository/conf/deployment.toml'), 'utf-8'));
+const conf = toml.parse(fs.readFileSync(path.join(process.cwd(), '/repository/conf/deployment.toml'), 'utf-8'));
 const log = conf.debug;
 
 // ignore ssl verifications
@@ -41,11 +41,11 @@ const logger = winston.createLogger({
 	format: winston.format.combine(appendTimestamp({}), loggerFormat),
 	transports: [
 		new winston.transports.File({
-			filename: path.join(__dirname, conf.log.source + 'api-republish-error.log'),
+			filename: path.join(process.cwd(), conf.log.source + 'api-republish-error.log'),
 			level: 'error',
 		}),
 		new winston.transports.File({
-			filename: path.join(__dirname, conf.log.source + 'api-republish.log'),
+			filename: path.join(process.cwd(), conf.log.source + 'api-republish.log'),
 			level: 'debug',
 		}),
 		new winston.transports.Console({ level: 'debug' }),
@@ -125,7 +125,7 @@ ${beautify(dcrResp.data, null, 4)}`
 		};
 
 		let accessTokenResp = await axios.post(
-			`https://${conf.hostname}:${conf.tokenPort}/token`,
+			`https://${conf.km_hostname}:${conf.km_port}/oauth2/token`,
 			qs.stringify(accessTokenReq),
 			{
 				headers: {
@@ -157,11 +157,11 @@ ${beautify(accessTokenResp.data, null, 4)}`);
 
 		if (log.debug)
 			logger.debug(
-				`Listing all available APIs with the generated Access Token : ${accessTokenResp.data.access_token}`
+				`Listing all available APIs using Publisher REST API with the generated Access Token : ${accessTokenResp.data.access_token}`
 			);
 
 		let apiResp = await axios.get(
-			`https://${conf.hostname}:${conf.port}/api/am/publisher/${conf.version}/apis?expand=${conf.expand}&limit=${conf.limit}&query=${conf.query}`,
+			`https://${conf.hostname}:${conf.port}/api/am/publisher/${conf.version}/apis?expand=${conf.expand}&limit=${conf.limit}&offset=${conf.offset}&query=${conf.query}`,
 			{
 				headers: {
 					'Content-Type': 'application/json',
@@ -181,8 +181,8 @@ ${beautify(apiResp.data, null, 4)}`);
 		let apis = [];
 		apiResp.data.list.forEach((element) => {
 			if (element.status === 'PUBLISHED' && element.visibility === 'RESTRICTED') {
-				if (log.debug) logger.debug(`ID = ${element.id} :: API Name = ${element.name}`);
-				apis.push(element.id);
+				if (log.debug) logger.debug(`API ID = ${element.id} :: API Name = ${element.name}`);
+				apis.push(element);
 			}
 		});
 
@@ -190,27 +190,10 @@ ${beautify(apiResp.data, null, 4)}`);
 			logger.info('No APIs available to republish');
 		}
 
-		apis.forEach((element) => {
-			logger.info(`Re-Publishing API ID = ${element}`);
-			axios
-				.post(
-					`https://${conf.hostname}:${conf.port}/api/am/publisher/${conf.version}/apis/change-lifecycle?apiId=${element}&action=Publish`,
-					null,
-					{
-						headers: {
-							'Content-Type': 'application/json',
-							Authorization: 'Bearer ' + accessTokenResp.data.access_token,
-						},
-					}
-				)
-				.catch((_error) => {
-					logger.error(
-						`Something went wrong while changing life-cycle for API ID = ${element}
->> `,
-						_error
-					);
-				});
-		});
+		// after 5 seconds timeout perform update
+		setTimeout(() => {
+			publishAPI(apis, conf, accessTokenResp, 0);
+		}, conf.misc.timeout);
 	} catch (error) {
 		if (error.response) {
 			/**
@@ -245,6 +228,43 @@ ${beautify(apiResp.data, null, 4)}`);
 				error
 			);
 		}
+	}
+}
+
+/**
+ * method to change life-cycle to Publish APIs
+ *
+ * @param {[]} apis an array of APIS
+ * @param {{}} conf deployment toml configurations
+ * @param {{}} accessTokenResp token endpoint response
+ * @param {number} count count
+ */
+async function publishAPI(apis, conf, accessTokenResp, count) {
+	if (count < apis.length) {
+		let element = apis[count];
+		logger.info(`Publishing API ID = ${element.id}, API Name = ${element.name}`);
+
+		axios
+			.post(
+				`https://${conf.hostname}:${conf.port}/api/am/publisher/${conf.version}/apis/change-lifecycle?apiId=${element.id}&action=Publish`,
+				null,
+				{
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: 'Bearer ' + accessTokenResp.data.access_token
+					}
+				}
+			)
+			.then(() => {
+				publishAPI(apis, conf, accessTokenResp, ++count);
+			})
+			.catch((error) => {
+				logger.error(
+					`Something went wrong while changing life-cycle for API ID = ${element.id} :: Name = ${element.name}
+>> `,
+					error
+				);
+			});
 	}
 }
 

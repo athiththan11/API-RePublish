@@ -3,8 +3,7 @@
 A simple NodeJS script to re-publish APIs using WSO2 API Manager REST APIs.
 
 > Inrtoduced to overcome Solr indexing problems in WSO2 API Manager to re-publish APIs (re-index).
->
-> Supports WSO2 API Manager `>= v2.5`
+> Supports WSO2 API Manager `>= v2.5.0`
 
 ## Structure
 
@@ -37,6 +36,48 @@ A simple NodeJS script to re-publish APIs using WSO2 API Manager REST APIs.
    ```
 
 > Execute `npm link` to link the `api-republish` package within your local enviroment so that we can invoke the package directly by executing `api-republish` command without executing the `node server` from the root directory
+
+## Deployment TOML Configurations
+
+### General Configurations
+
+| Configuration  | Description  | Default  |
+|---|---|---|
+| hostname  | Hostname of the Publisher node  | `localhost`  |
+| port  | Port of the Publisher node  | 9443  |   |   |
+| km_hostname  | Hostname of the Key Manager node  | `localhost`  |
+| km_port  | Port of the Key Manager node  | 9443  |
+| version  | WSO2 API Manager REST API version  | `v0.14`  |
+| expand  | Expand query parameter  | true  |
+| limit  | Limit query parameter  | 200  |
+| offset  | Offset query parameter  | 0  |
+| query  | Query query parameter  | `status:PUBLISHED`  |
+| username  | Username of Admin user  | `admin`  |
+| password  | Password of Admin user  | `admin`  |
+
+### Dynamic Client Registration Configurations
+
+| Configuration  | Description  | Default  |
+|---|---|---|---|---|
+| callbackUrl  | Callback URL for DCR  | `www.google.lk`  |
+| clientName  | Name of the DCR  | `rest_api_store`  |
+| owner  | Owner of the DCR  | `admin`  |
+| grantType  | Grant Types allowed  | `password refresh_token`  |
+| saasApp  | Saas App  | true  |
+
+### Access Token Configurations
+
+| Configuration  | Description  | Default  |
+|---|---|---|
+| grant_type  | Grant Type used for the Access Token generation  | `password`  |
+| scope  | Scopes  | `apim:subscribe apim:api_create apim:api_view apim:api_publish`  |
+
+### Debug Log Configuration
+
+| Configuration | Description | Default |
+|--|--|--|
+| debug | Enable to print Debug logs of the execution flow | false |
+| response | Enable to print the Responses retrieved from the Server during the execution | false |
 
 ## Execution Process Flow
 
