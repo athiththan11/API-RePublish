@@ -5,6 +5,8 @@ A simple NodeJS script to re-publish APIs using WSO2 API Manager REST APIs.
 > Inrtoduced to overcome Solr indexing problems in WSO2 API Manager to re-publish APIs (re-index).
 > Supports WSO2 API Manager `>= v2.5.0`
 
+[apim-3.x-branch](https://github.com/athiththan11/API-RePublish/tree/apim-3.x) contains the implementation for API Manager servers 3.x family. Please read the execution flow and the README to understand the execution plan.
+
 ## Structure
 
 ```text
@@ -88,3 +90,7 @@ A simple NodeJS script to re-publish APIs using WSO2 API Manager REST APIs.
    1. Status = Published
    2. Visibility = Restricted
 5. Publishes the filtered APIs
+
+## License
+
+[Apache 2.0](LICENSE)
