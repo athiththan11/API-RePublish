@@ -37,9 +37,9 @@ A simple NodeJS script to re-publish APIs using WSO2 API Manager REST APIs.
 
 > Execute `npm link` to link the `api-republish` package within your local enviroment so that we can invoke the package directly by executing `api-republish` command without executing the `node server` from the root directory
 
-## Deployment TOML Configurations
+### Deployment TOML Configurations
 
-### General Configurations
+#### General Configurations
 
 | Configuration  | Description  | Default  |
 |---|---|---|
@@ -55,24 +55,24 @@ A simple NodeJS script to re-publish APIs using WSO2 API Manager REST APIs.
 | username  | Username of Admin user  | `admin`  |
 | password  | Password of Admin user  | `admin`  |
 
-### Dynamic Client Registration Configurations
+#### Dynamic Client Registration Configurations
 
 | Configuration  | Description  | Default  |
-|---|---|---|---|---|
+|---|---|---|
 | callbackUrl  | Callback URL for DCR  | `www.google.lk`  |
 | clientName  | Name of the DCR  | `rest_api_store`  |
 | owner  | Owner of the DCR  | `admin`  |
 | grantType  | Grant Types allowed  | `password refresh_token`  |
 | saasApp  | Saas App  | true  |
 
-### Access Token Configurations
+#### Access Token Configurations
 
 | Configuration  | Description  | Default  |
 |---|---|---|
 | grant_type  | Grant Type used for the Access Token generation  | `password`  |
 | scope  | Scopes  | `apim:subscribe apim:api_create apim:api_view apim:api_publish`  |
 
-### Debug Log Configuration
+#### Debug Log Configuration
 
 | Configuration | Description | Default |
 |--|--|--|
