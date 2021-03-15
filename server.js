@@ -82,7 +82,7 @@ async function registerClient() {
 		};
 
 		let dcrResp = await axios.post(
-			`https://${conf.km_hostname}:${conf.km_port}/client-registration/${conf.version}/register`,
+			`https://${conf.km_hostname}:${conf.km_port}/client-registration/${conf.adminVersion}/register`,
 			dcrReq,
 			{
 				headers: {
@@ -125,7 +125,7 @@ ${beautify(dcrResp.data, null, 4)}`
 		};
 
 		let accessTokenResp = await axios.post(
-			`https://${conf.km_hostname}:${conf.tokenPort}/token`,
+			`https://${conf.km_hostname}:${conf.km_port}/oauth2/token`,
 			qs.stringify(accessTokenReq),
 			{
 				headers: {
@@ -161,7 +161,7 @@ ${beautify(accessTokenResp.data, null, 4)}`);
 			);
 
 		let apiResp = await axios.get(
-			`https://${conf.hostname}:${conf.port}/api/am/${conf.restapi}/v1/apis?expand=${conf.expand}&limit=${conf.limit}&offset=${conf.offset}&query=${conf.query}`,
+			`https://${conf.hostname}:${conf.port}/api/am/${conf.restapi}/${conf.publisherVersion}/apis?expand=${conf.expand}&limit=${conf.limit}&offset=${conf.offset}&query=${conf.query}`,
 			{
 				headers: {
 					'Content-Type': 'application/json',
@@ -247,7 +247,7 @@ async function blockAndRePublishAPI(apis, conf, accessTokenResp, count) {
 
 		axios
 			.post(
-				`https://${conf.hostname}:${conf.port}/api/am/publisher/v1/apis/change-lifecycle?apiId=${element.id}&action=Block`,
+				`https://${conf.hostname}:${conf.port}/api/am/publisher/${conf.publisherVersion}/apis/change-lifecycle?apiId=${element.id}&action=Block`,
 				null,
 				{
 					headers: {
@@ -287,7 +287,7 @@ async function republishAPI(apis, conf, accessTokenResp, count) {
 
 		axios
 			.post(
-				`https://${conf.hostname}:${conf.port}/api/am/publisher/v1/apis/change-lifecycle?apiId=${element.id}&action=Re-Publish`,
+				`https://${conf.hostname}:${conf.port}/api/am/publisher/${conf.publisherVersion}/apis/change-lifecycle?apiId=${element.id}&action=Re-Publish`,
 				null,
 				{
 					headers: {

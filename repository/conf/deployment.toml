@@ -1,11 +1,17 @@
 # server configurations
 hostname = 'localhost'
 port = '9443'
+
+#Key manager server configurations
 km_hostname = 'localhost'
 km_port = '9443'
-tokenPort = '8243'
-version = 'v0.17'
+
+#REST clients configurations
+adminVersion = 'v0.17'
+publisherVersion = 'v1'
 restapi = 'publisher' # use publisher or store rest api
+
+#API calls configurations
 expand = true
 limit = 500
 offset = 0
