@@ -12,7 +12,7 @@
 		"api-republish": "./bin/api-republish"
 	},
 	"dependencies": {
-		"axios": "0.21.2",
+		"axios": "1.6.0",
 		"https": "1.0.0",
 		"json-beautify": "1.1.1",
 		"log-timestamp": "0.3.0",
